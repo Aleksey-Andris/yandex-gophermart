@@ -1,18 +1,23 @@
-package pingcontroller
+package controllers
 
 import (
+	"context"
 	"net/http"
 
-	"github.com/Aleksey-Andris/yandex-gophermart/internal"
+	"github.com/Aleksey-Andris/yandex-gophermart/internal/instruments/logger"
 	"github.com/go-chi/chi"
 )
 
-type controller struct {
-	logger  internal.Logger
-	usecase internal.PingUsecase
+type Usecase interface {
+	Ping(ctx context.Context) error
 }
 
-func New(logger internal.Logger, usecase internal.PingUsecase) *controller {
+type controller struct {
+	logger  *logger.Logger
+	usecase Usecase
+}
+
+func New(logger *logger.Logger, usecase Usecase) *controller {
 	return &controller{
 		logger:  logger,
 		usecase: usecase,
@@ -28,9 +33,9 @@ func (c *controller) Init() *chi.Mux {
 func (c *controller) ping(res http.ResponseWriter, req *http.Request) {
 	err := c.usecase.Ping(req.Context())
 	if err != nil {
-		c.logger.Error("wrong ping storage", err)
+		c.logger.Errorf("error pinging storage: %s", err)
 		res.WriteHeader(http.StatusInternalServerError)
-		return
+		return 
 	}
 	res.WriteHeader(http.StatusOK)
 }

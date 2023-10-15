@@ -31,6 +31,7 @@ type Log struct {
 type PG struct {
 	PoolMax int    `env:"POOL_MAX" envDefault:"1"`
 	URI     string `env:"DATABASE_URI"`
+	URL     string `env:"DATABASE_URL" envDefault:"postgres://postgres:gophermart@localhost:5432/postgres?sslmode=disable"`
 }
 
 func New() (*Config, error) {
