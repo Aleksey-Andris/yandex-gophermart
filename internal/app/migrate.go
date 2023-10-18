@@ -2,29 +2,37 @@ package app
 
 import (
 	"database/sql"
+	"errors"
+
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
-	_ "github.com/lib/pq"
+	_ "github.com/jackc/pgx/v4/stdlib"
 
 	"github.com/Aleksey-Andris/yandex-gophermart/config"
+	"github.com/Aleksey-Andris/yandex-gophermart/internal/instruments/logger"
 )
 
-func startMigration(cfg *config.Config) error {
-	db, err := sql.Open("postgres", cfg.PG.URL)
+func startMigrations(l *logger.Logger, cfg *config.Config) {
+	db, err := sql.Open("pgx", cfg.PG.URI)
 	if err != nil {
-		return err
+		l.Fatalf("error opening db: %s", err)
 	}
 	driver, err := postgres.WithInstance(db, &postgres.Config{})
 	if err != nil {
-		return err
+		l.Fatalf("error creating driver: %s", err)
 	}
-	m, err := migrate.NewWithDatabaseInstance(
-		"./migrations/",
-		"postgres", driver)
+	m, err := migrate.NewWithDatabaseInstance("file://migrations", "postgres", driver)
 	if err != nil {
-		return err
+		l.Fatalf("error creating migrate: %s", err)
 	}
 	defer m.Close()
-	return m.Up()
+	err = m.Up()
+	if err != nil {
+		if errors.Is(err, migrate.ErrNoChange) {
+			l.Info("Migrate: no change")
+		} else {
+			l.Fatalf("migration error: %s", err)
+		}
+	}
 }

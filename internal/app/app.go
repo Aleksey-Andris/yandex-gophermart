@@ -19,23 +19,18 @@ func Run(cfg *config.Config) {
 		log.Fatalf("logger create error: %s", err)
 	}
 	defer l.Sync()
-	l.Info("config application - ",
-		" Run_Addres: ", cfg.HTTP.RunAddres,
-		" Accrual_Address: ", cfg.HTTP.AccrualAddress,
-		" Environment: ", cfg.Log.Environment,
-		" DB_PoolMax: ", cfg.PG.PoolMax,
-		" DB_URI: ", cfg.PG.URI,
-		" DB_URL: ", cfg.PG.URL,
+	l.Infow("Config application:",
+		"Run_Addres", cfg.HTTP.RunAddres,
+		"Accrual_Address", cfg.HTTP.AccrualAddress,
+		"Environment", cfg.Log.Environment,
+		"DB_PoolMax", cfg.PG.PoolMax,
+		"DB_URI", cfg.PG.URI,
 	)
-
-	err = startMigration(cfg)
-	if err != nil {
-		l.Fatalf("migrations failed: %s", err)
-	}
+	startMigrations(l, cfg)
 
 	pg, err := postgres.New(cfg.PG.URI, postgres.MaxPoolSize(cfg.PG.PoolMax))
 	if err != nil {
-		l.Fatalf("postgres create error: %s", err)
+		l.Fatalf("postgres creating error: %s", err)
 	}
 	defer pg.Close()
 
@@ -46,13 +41,13 @@ func Run(cfg *config.Config) {
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)
 	select {
 	case s := <-interrupt:
-		l.Infof("shutting down signal: %s", s.String())
+		l.Infof("shutting down signal: ", s.String())
 	case err = <-httpServer.Notify():
 		l.Fatal("error starting server: %s", err)
 	}
 	err = httpServer.Shutdown()
 	if err != nil {
-		l.Fatal("error shutdowing server: %s", err)
+		l.Fatalf("error shutdowing server: %s", err)
 	}
 }
 
