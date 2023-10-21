@@ -16,15 +16,15 @@ import (
 func startMigrations(l *logger.Logger, cfg *config.Config) {
 	db, err := sql.Open("pgx", cfg.PG.URI)
 	if err != nil {
-		l.Fatalf("error opening db: %s", err)
+		l.Fatalf("Migrate: failed opening db: %s", err)
 	}
 	driver, err := postgres.WithInstance(db, &postgres.Config{})
 	if err != nil {
-		l.Fatalf("error creating driver: %s", err)
+		l.Fatalf("Migrate: failed creating driver: %s", err)
 	}
 	m, err := migrate.NewWithDatabaseInstance("file://migrations", "postgres", driver)
 	if err != nil {
-		l.Fatalf("error creating migrate: %s", err)
+		l.Fatalf("Migrate: failed creating migrate: %s", err)
 	}
 	defer m.Close()
 	err = m.Up()
@@ -32,7 +32,7 @@ func startMigrations(l *logger.Logger, cfg *config.Config) {
 		if errors.Is(err, migrate.ErrNoChange) {
 			l.Info("Migrate: no change")
 		} else {
-			l.Fatalf("migration error: %s", err)
+			l.Fatalf("Migrate: migrations failed: %s", err)
 		}
 	}
 }

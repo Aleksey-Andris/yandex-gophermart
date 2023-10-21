@@ -11,7 +11,7 @@ import (
 func main() {
 	cfg, err := config.New()
 	if err != nil {
-		log.Fatalf("config error: %s", err)
+		log.Fatalf("Config: config error: %s", err)
 	}
 	app.Run(cfg)
 }

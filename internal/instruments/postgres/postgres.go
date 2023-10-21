@@ -36,7 +36,7 @@ func New(url string, opts ...Option) (*Postgres, error) {
 
 	poolConfig, err := pgxpool.ParseConfig(url)
 	if err != nil {
-		return nil, fmt.Errorf("postgres - NewPostgres - pgxpool.ParseConfig: %w", err)
+		return nil, fmt.Errorf("failed parsing config: %w", err)
 	}
 
 	poolConfig.MaxConns = int32(pg.maxPoolSize)
@@ -47,7 +47,7 @@ func New(url string, opts ...Option) (*Postgres, error) {
 			break
 		}
 
-		log.Printf("Postgres is trying to connect, attempts left: %d", pg.connAttempts)
+		log.Printf("Postgres: trying to connect, attempts left: %d", pg.connAttempts)
 
 		time.Sleep(pg.connTimeout)
 
@@ -55,7 +55,7 @@ func New(url string, opts ...Option) (*Postgres, error) {
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("postgres - NewPostgres - connAttempts == 0: %w", err)
+		return nil, fmt.Errorf("failed creating pg.Pool: %w", err)
 	}
 
 	return pg, nil

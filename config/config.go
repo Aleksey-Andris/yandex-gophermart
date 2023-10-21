@@ -36,7 +36,7 @@ type PG struct {
 func New() (*Config, error) {
 	cfg := &Config{}
 	if err := env.Parse(cfg); err != nil {
-		return nil, fmt.Errorf("config error reading env: %w", err)
+		return nil, fmt.Errorf("failed reading env: %w", err)
 	}
 
 	flag.StringVar(&flagRunAddress, "a", "", "run server address")
