@@ -33,7 +33,7 @@ func (c *controller) Init() *chi.Mux {
 func (c *controller) ping(res http.ResponseWriter, req *http.Request) {
 	err := c.usecase.Ping(req.Context())
 	if err != nil {
-		c.logger.Errorf("Ping: failed pinging storage: %s. Session ID: ", err, c.logger.GetSesionID)
+		c.logger.Errorf("Ping: failed pinging storage, err value: %s. Session ID: ", err, c.logger.GetSesionID(req.Context()))
 		res.WriteHeader(http.StatusInternalServerError)
 		return 
 	}

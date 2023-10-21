@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	sessionXTX YGMLogContext = "YGMSessionID"
+	sessionCTX YGMLogContext = "YGMSessionID"
 )
 
 type YGMLogContext string
@@ -47,7 +47,7 @@ func (l *Logger) WithLogging(next http.Handler) http.Handler {
 			ResponseWriter: res,
 			responseData:   responseData,
 		}
-		request := req.WithContext(context.WithValue(req.Context(), sessionXTX, sessionID))
+		request := req.WithContext(context.WithValue(req.Context(), sessionCTX, sessionID))
 		next.ServeHTTP(&lRes, request)
 		duration := time.Since(start)
 
@@ -63,8 +63,7 @@ func (l *Logger) WithLogging(next http.Handler) http.Handler {
 }
 
 func (l *Logger) GetSesionID(ctx context.Context) string {
-	ctxVal := ctx.Value(sessionXTX)
+	ctxVal := ctx.Value(sessionCTX)
 	sessionID, _ := ctxVal.(uuid.UUID)
 	return sessionID.String()
-
 }

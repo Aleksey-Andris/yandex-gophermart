@@ -1,7 +1,7 @@
 CREATE TABLE ygm_user (
     id BIGSERIAL PRIMARY KEY,
-    login_hash VARCHAR(255) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL UNIQUE
+    login VARCHAR(50) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL
 );
 CREATE TABLE ygm_order_status (
     id BIGSERIAL PRIMARY KEY,

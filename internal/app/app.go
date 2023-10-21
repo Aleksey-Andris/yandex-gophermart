@@ -10,7 +10,7 @@ import (
 	"github.com/Aleksey-Andris/yandex-gophermart/internal/instruments/compression"
 	"github.com/Aleksey-Andris/yandex-gophermart/internal/instruments/httpserver"
 	"github.com/Aleksey-Andris/yandex-gophermart/internal/instruments/logger"
-	"github.com/Aleksey-Andris/yandex-gophermart/internal/instruments/postgres"
+	"github.com/Aleksey-Andris/yandex-gophermart/internal/instruments/db"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 )
@@ -30,9 +30,9 @@ func Run(cfg *config.Config) {
 	)
 	startMigrations(l, cfg)
 
-	pg, err := postgres.New(cfg.PG.URI, postgres.MaxPoolSize(cfg.PG.PoolMax))
+	pg, err := db.NewPostgres(cfg.PG.URI, db.MaxPoolSize(cfg.PG.PoolMax))
 	if err != nil {
-		l.Fatalf("Postgres: creating error: %s", err)
+		l.Fatalf("Storage: creating error: %s", err)
 	}
 	defer pg.Close()
 
@@ -53,11 +53,12 @@ func Run(cfg *config.Config) {
 	}
 }
 
-func initRouter(l *logger.Logger, pg *postgres.Postgres) *chi.Mux {
+func initRouter(l *logger.Logger, pg *db.Postgres) *chi.Mux {
 	router := chi.NewRouter()
 	router.Use(compression.Decompress)
 	router.Use(l.WithLogging)
 	router.Use(middleware.Compress(5, "application/json", "text/html"))
 	router.Mount("/", initPing(l, pg))
+	router.Mount("/api/user/", initAuth(l, pg))
 	return router
 }
