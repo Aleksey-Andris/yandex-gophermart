@@ -9,6 +9,7 @@ import (
 	"github.com/Aleksey-Andris/yandex-gophermart/internal/instruments/db"
 	"github.com/Aleksey-Andris/yandex-gophermart/internal/instruments/logger"
 	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )
 
@@ -33,7 +34,7 @@ func New(logger *logger.Logger, db *db.Postgres) *storage {
 func (s *storage) Register(ctx context.Context, auth *authorisations.Auth) (*authorisations.Auth, error) {
 	query := fmt.Sprintf("INSERT INTO %s (%s, %s) VALUES($1, $2) RETURNING id;", userTable, userLogin, userPass)
 	row := s.db.Pool.QueryRow(ctx, query, auth.Login, auth.Password)
-    err := row.Scan(auth.ID)
+    err := row.Scan(&auth.ID)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
@@ -42,4 +43,15 @@ func (s *storage) Register(ctx context.Context, auth *authorisations.Auth) (*aut
 	}
 	return auth, err
 }
- 
+
+func (s *storage) Login(ctx context.Context, auth *authorisations.Auth) (*authorisations.Auth, error) {
+	query := fmt.Sprintf("SELECT id, %s, %s FROM %s WHERE %s=$1 AND %s=$2;", userLogin, userPass, userTable, userLogin, userPass)
+	row := s.db.Pool.QueryRow(ctx, query, auth.Login, auth.Password)
+	err := row.Scan(&auth.ID, &auth.Login, &auth.Password)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			err = db.ErrNoRows
+		}
+	}
+	return auth, err
+}

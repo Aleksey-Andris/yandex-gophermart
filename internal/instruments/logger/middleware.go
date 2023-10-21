@@ -8,9 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
-const (
-	sessionCTX YGMLogContext = "YGMSessionID"
-)
+const sessionCTX YGMLogContext = "YGMSessionID"
 
 type YGMLogContext string
 
