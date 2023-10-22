@@ -5,7 +5,7 @@ CREATE TABLE ygm_user (
 );
 CREATE TABLE ygm_order_status (
     id BIGSERIAL PRIMARY KEY,
-    name VARCHAR(50) NOT NULL UNIQUE,
+    name VARCHAR(255) NOT NULL UNIQUE,
     ident VARCHAR(50) NOT NULL UNIQUE
 );
 CREATE TABLE ygm_order (

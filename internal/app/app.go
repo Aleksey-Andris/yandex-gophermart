@@ -8,9 +8,9 @@ import (
 
 	"github.com/Aleksey-Andris/yandex-gophermart/config"
 	"github.com/Aleksey-Andris/yandex-gophermart/internal/instruments/compression"
+	"github.com/Aleksey-Andris/yandex-gophermart/internal/instruments/db"
 	"github.com/Aleksey-Andris/yandex-gophermart/internal/instruments/httpserver"
 	"github.com/Aleksey-Andris/yandex-gophermart/internal/instruments/logger"
-	"github.com/Aleksey-Andris/yandex-gophermart/internal/instruments/db"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 )
@@ -60,5 +60,6 @@ func initRouter(l *logger.Logger, pg *db.Postgres) *chi.Mux {
 	router.Use(middleware.Compress(5, "application/json", "text/html"))
 	router.Mount("/", initPing(l, pg))
 	router.Mount("/api/user/", initAuth(l, pg))
+	router.Mount("/api/user/orders", initOrder(l, pg))
 	return router
 }
