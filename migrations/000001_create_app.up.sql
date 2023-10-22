@@ -18,5 +18,5 @@ CREATE TABLE ygm_order (
 CREATE TABLE ygm_balls_operation (
     id BIGSERIAL PRIMARY KEY,
     order_id BIGINT REFERENCES ygm_order (id) NOT NULL,
-    amount NUMERIC(2)
+    amount NUMERIC
 );

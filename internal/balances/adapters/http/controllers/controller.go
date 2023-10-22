@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/Aleksey-Andris/yandex-gophermart/internal/authorisations"
 	"github.com/Aleksey-Andris/yandex-gophermart/internal/balances"
@@ -14,12 +16,14 @@ import (
 )
 
 const (
-	сontentType          = "Content-Type"
-	сontentTypeAppJSON   = "application/json"
+	сontentType         = "Content-Type"
+	сontentTypeAppJSON  = "application/json"
+	сontentTypeAppXGZIP = "application/x-gzip"
 )
 
 type Usecase interface {
 	Get(ctx context.Context, userID int64) (*balances.Balance, error)
+	Spend(ctx context.Context, oper *balances.Operation) (*balances.Operation, error)
 }
 
 type controller struct {
@@ -38,6 +42,7 @@ func (c *controller) Init() *chi.Mux {
 	router := chi.NewRouter()
 	router.Use(authorisations.UserIdentity)
 	router.Get("/", c.get)
+	router.Post("/withdraw", c.spend)
 	return router
 }
 
@@ -62,4 +67,43 @@ func (c *controller) get(res http.ResponseWriter, req *http.Request) {
 	res.Header().Set(сontentType, сontentTypeAppJSON)
 	res.WriteHeader(http.StatusOK)
 	res.Write(response)
+}
+
+func (c *controller) spend(res http.ResponseWriter, req *http.Request) {
+	ct := strings.Split(req.Header.Get(сontentType), ";")[0]
+	if !(ct == сontentTypeAppJSON || ct == сontentTypeAppXGZIP) {
+		c.logger.Errorf("Spend: invalid content type: %s. Session ID: %s", ct, c.logger.GetSesionID(req.Context()))
+		http.Error(res, "Invalid Content-Type", http.StatusBadRequest)
+		return
+	}
+
+	var request balances.Operation
+	if err := json.NewDecoder(req.Body).Decode(&request); err != nil {
+		c.logger.Errorf("Spend: failed decoding body, err value: %s. Session ID: %s", err, c.logger.GetSesionID(req.Context()))
+		http.Error(res, "Invalid body", http.StatusBadRequest)
+		return
+	}
+
+	num, err := strconv.ParseInt(string(request.Ord), 10, 64)
+	if err != nil || !balances.ValidLoon(int(num)) {
+		c.logger.Errorf("Spend: invalid nums format, err value: %s, num: %s. Session ID: %s", err, string(request.Ord), c.logger.GetSesionID(req.Context()))
+		http.Error(res, "Invalid nums format", http.StatusUnprocessableEntity)
+		return
+	}
+
+	operation, err := c.usecase.Spend(req.Context(), &request)
+	if err != nil {
+		if errors.Is(err, db.ErrUserNotExist) {
+			res.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		c.logger.Errorf("Spend: failed to spend balls, err value: %s. Session ID: %s", err, c.logger.GetSesionID(req.Context()))
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if operation.Result == balances.ResultNotEnough {
+		res.WriteHeader(http.StatusPaymentRequired)
+		return
+	}
+	res.WriteHeader(http.StatusOK)
 }

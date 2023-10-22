@@ -23,8 +23,8 @@ func New(logger *logger.Logger, storage Storage) *usecase {
 	}
 }
 
-func (u *usecase) AddOne(ctx context.Context, auth *Order) (*Order, error) {
-	return u.storage.AddOne(ctx, auth)
+func (u *usecase) AddOne(ctx context.Context, order *Order) (*Order, error) {
+	return u.storage.AddOne(ctx, order)
 }
 
 func (u *usecase) GetAll(ctx context.Context, userID int64) ([]Order, error) {

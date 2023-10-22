@@ -65,7 +65,7 @@ func (c *controller) addOne(res http.ResponseWriter, req *http.Request) {
 	}
 
 	num, err := strconv.ParseInt(string(body), 10, 64)
-	if err != nil || !validLoon(int(num)) {
+	if err != nil || !orders.ValidLoon(int(num)) {
 		c.logger.Errorf("Orders: invalid nums format, err value: %s, num: %s. Session ID: %s", err, string(body), c.logger.GetSesionID(req.Context()))
 		http.Error(res, "Invalid nums format", http.StatusUnprocessableEntity)
 		return
@@ -120,24 +120,4 @@ func (c *controller) getAll(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusOK)
 	res.Write(response)
 
-}
-
-func validLoon(number int) bool {
-	return (number%10+checksum(number/10))%10 == 0
-}
-
-func checksum(number int) int {
-	var luhn int
-	for i := 0; number > 0; i++ {
-		cur := number % 10
-		if i%2 == 0 {
-			cur = cur * 2
-			if cur > 9 {
-				cur = cur%10 + cur/10
-			}
-		}
-		luhn += cur
-		number = number / 10
-	}
-	return luhn % 10
 }
