@@ -8,7 +8,7 @@ import (
 
 type Storage interface {
 	AddOne(ctx context.Context, auth *Order) (*Order, error)
-	GetAll(ctx context.Context, auth *Order) (*Order, error)
+	GetAll(ctx context.Context, userID int64) ([]Order, error)
 }
 
 type usecase struct {
@@ -27,6 +27,6 @@ func (u *usecase) AddOne(ctx context.Context, auth *Order) (*Order, error) {
 	return u.storage.AddOne(ctx, auth)
 }
 
-func (u *usecase) GetAll(ctx context.Context, auth *Order) (*Order, error) {
-	return u.storage.GetAll(ctx, auth)
+func (u *usecase) GetAll(ctx context.Context, userID int64) ([]Order, error) {
+	return u.storage.GetAll(ctx, userID)
 }

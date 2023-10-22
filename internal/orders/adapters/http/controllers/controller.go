@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
@@ -25,7 +26,7 @@ const (
 
 type Usecase interface {
 	AddOne(ctx context.Context, auth *orders.Order) (*orders.Order, error)
-	GetAll(ctx context.Context, auth *orders.Order) (*orders.Order, error)
+	GetAll(ctx context.Context, userID int64) ([]orders.Order, error)
 }
 
 type controller struct {
@@ -44,7 +45,7 @@ func (c *controller) Init() *chi.Mux {
 	router := chi.NewRouter()
 	router.Use(authorisations.UserIdentity)
 	router.Post("/", c.addOne)
-	//router.Get("/", c.getAll)
+	router.Get("/", c.getAll)
 	return router
 }
 
@@ -91,6 +92,34 @@ func (c *controller) addOne(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	res.WriteHeader(http.StatusAccepted)
+}
+
+func (c *controller) getAll(res http.ResponseWriter, req *http.Request) {
+	orders, err := c.usecase.GetAll(req.Context(), authorisations.GetUserID(req.Context()))
+	if err != nil {
+		if errors.Is(err, db.ErrUserNotExist) {
+			res.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		c.logger.Errorf("Orders: failed to get orders, err value: %s. Session ID: %s", err, c.logger.GetSesionID(req.Context()))
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if len(orders) == 0 {
+		res.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	response, err := json.Marshal(&orders)
+	if err != nil {
+		c.logger.Errorf("Orders: failed to marshal body, err value: %s. Session ID: %s", err, c.logger.GetSesionID(req.Context()))
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	res.Header().Set(сontentType, сontentTypeAppJSON)
+	res.WriteHeader(http.StatusOK)
+	res.Write(response)
+
 }
 
 func validLoon(number int) bool {

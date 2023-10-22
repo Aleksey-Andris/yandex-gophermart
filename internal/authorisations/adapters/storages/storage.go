@@ -3,7 +3,6 @@ package storages
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/Aleksey-Andris/yandex-gophermart/internal/authorisations"
 	"github.com/Aleksey-Andris/yandex-gophermart/internal/instruments/db"
@@ -11,12 +10,6 @@ import (
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-)
-
-const (
-	userTable = "ygm_user"
-	userLogin = "login"
-	userPass  = "password_hash"
 )
 
 type storage struct {
@@ -32,9 +25,9 @@ func New(logger *logger.Logger, db *db.Postgres) *storage {
 }
 
 func (s *storage) Register(ctx context.Context, auth *authorisations.Auth) (*authorisations.Auth, error) {
-	query := fmt.Sprintf("INSERT INTO %s (%s, %s) VALUES($1, $2) RETURNING id;", userTable, userLogin, userPass)
+	query := "INSERT INTO ygm_user (login, password_hash) VALUES($1, $2) RETURNING id;"
 	row := s.db.Pool.QueryRow(ctx, query, auth.Login, auth.Password)
-    err := row.Scan(&auth.ID)
+	err := row.Scan(&auth.ID)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
@@ -45,7 +38,7 @@ func (s *storage) Register(ctx context.Context, auth *authorisations.Auth) (*aut
 }
 
 func (s *storage) Login(ctx context.Context, auth *authorisations.Auth) (*authorisations.Auth, error) {
-	query := fmt.Sprintf("SELECT id, %s, %s FROM %s WHERE %s=$1 AND %s=$2;", userLogin, userPass, userTable, userLogin, userPass)
+	query := "SELECT id, login, password_hash FROM ygm_user WHERE login=$1 AND password_hash=$2;"
 	row := s.db.Pool.QueryRow(ctx, query, auth.Login, auth.Password)
 	err := row.Scan(&auth.ID, &auth.Login, &auth.Password)
 	if err != nil {
