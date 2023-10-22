@@ -61,5 +61,6 @@ func initRouter(l *logger.Logger, pg *db.Postgres) *chi.Mux {
 	router.Mount("/", initPing(l, pg))
 	router.Mount("/api/user/", initAuth(l, pg))
 	router.Mount("/api/user/orders", initOrder(l, pg))
+	router.Mount("/api/user/balance", initBalance(l, pg))
 	return router
 }
