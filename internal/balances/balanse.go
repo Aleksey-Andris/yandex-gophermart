@@ -1,7 +1,5 @@
 package balances
 
-import "time"
-
 const (
 	ResultNotEnough string = "Not enough balls"
 	ResultOK        string = "success"
@@ -10,14 +8,13 @@ const (
 type Balance struct {
 	Current    float64     `json:"current"`
 	Withdrawn  float64     `json:"withdrawn"`
-	Operations []Operation `json:"orders,omitempty"`
+	Operations []Operation `json:"operations,omitempty"`
 }
 
 type Operation struct {
-	Ord    string    `json:"order"`
-	Amount float64   `json:"sum"`
-	Data   time.Time `json:"processed_at,omitempty"`
-	Result string    `json:"-"`
+	Ord    string  `json:"order"`
+	Amount float64 `json:"sum"`
+	Result string  `json:"-"`
 }
 
 func ValidLoon(number int) bool {
