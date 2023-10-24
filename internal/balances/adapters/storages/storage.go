@@ -2,7 +2,6 @@ package storages
 
 import (
 	"context"
-	"errors"
 	"strconv"
 	"time"
 
@@ -10,7 +9,6 @@ import (
 	"github.com/Aleksey-Andris/yandex-gophermart/internal/balances"
 	"github.com/Aleksey-Andris/yandex-gophermart/internal/instruments/db"
 	"github.com/Aleksey-Andris/yandex-gophermart/internal/instruments/logger"
-	"github.com/jackc/pgx/v5"
 )
 
 type storage struct {
@@ -26,18 +24,7 @@ func New(logger *logger.Logger, db *db.Postgres) *storage {
 }
 
 func (s *storage) Get(ctx context.Context, userID int64) (*balances.Balance, error) {
-	var factUserId int64
-	query := "SELECT id FROM ygm_user WHERE id = $1;"
-	row := s.db.Pool.QueryRow(ctx, query, userID)
-	err := row.Scan(&factUserId)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, db.ErrUserNotExist
-		}
-		return nil, err
-	}
-
-	query = "SELECT" +
+	query := "SELECT" +
 
 		" (SELECT COALESCE(SUM(opp.amount), 0) AS current FROM ygm_balls_operation opp" +
 		" LEFT JOIN ygm_order ordp ON ordp.id = opp.order_id" +
@@ -48,22 +35,13 @@ func (s *storage) Get(ctx context.Context, userID int64) (*balances.Balance, err
 		" WHERE ordm.user_id = $2 AND opm.amount < 0);"
 
 	var balanse balances.Balance
-	row = s.db.Pool.QueryRow(ctx, query, userID, userID)
-	err = row.Scan(&balanse.Current, &balanse.Withdrawn)
+	row := s.db.Pool.QueryRow(ctx, query, userID, userID)
+	err := row.Scan(&balanse.Current, &balanse.Withdrawn)
 	return &balanse, err
 }
 
 func (s *storage) Spend(ctx context.Context, oper *balances.Operation) (*balances.Operation, error) {
-	factUserId := authorisations.GetUserID(ctx)
-	query := "SELECT id FROM ygm_user WHERE id = $1;"
-	row := s.db.Pool.QueryRow(ctx, query, authorisations.GetUserID(ctx))
-	err := row.Scan(&factUserId)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, db.ErrUserNotExist
-		}
-		return nil, err
-	}
+	userId := authorisations.GetUserID(ctx)
 
 	tx, err := s.db.Pool.Begin(ctx)
 	if err != nil {
@@ -76,9 +54,9 @@ func (s *storage) Spend(ctx context.Context, oper *balances.Operation) (*balance
 		return nil, err
 	}
 	var ordID int64
-	query = "INSERT INTO ygm_order (user_id, status_id, num, order_date)" +
+	query := "INSERT INTO ygm_order (user_id, status_id, num, order_date)" +
 		" VALUES($1, (SELECT s.id FROM ygm_order_status s WHERE s.ident=$2), $3, $4) RETURNING id;"
-	row = tx.QueryRow(ctx, query, factUserId, "NEW", ordNum, time.Now())
+	row := tx.QueryRow(ctx, query, userId, "NEW", ordNum, time.Now())
 	err = row.Scan(&ordID)
 	if err != nil {
 		return nil, err
@@ -94,7 +72,7 @@ func (s *storage) Spend(ctx context.Context, oper *balances.Operation) (*balance
 	query = "SELECT COALESCE(SUM(opp.amount), 0) AS current FROM ygm_balls_operation opp" +
 		" LEFT JOIN ygm_order ordp ON ordp.id = opp.order_id" +
 		" WHERE ordp.user_id = $1;"
-	row = tx.QueryRow(ctx, query, factUserId)
+	row = tx.QueryRow(ctx, query, userId)
 	err = row.Scan(&sum)
 	if err != nil {
 		return nil, err

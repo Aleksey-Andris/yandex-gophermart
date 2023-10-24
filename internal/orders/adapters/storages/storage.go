@@ -51,19 +51,8 @@ func (s *storage) AddOne(ctx context.Context, order *orders.Order) (*orders.Orde
 }
 
 func (s *storage) GetAll(ctx context.Context, userID int64) ([]orders.Order, error) {
-	var factUserId int64
-	query := "SELECT id FROM ygm_user WHERE id = $1;"
-	row := s.db.Pool.QueryRow(ctx, query, userID)
-	err := row.Scan(&factUserId)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, db.ErrUserNotExist
-		}
-		return nil, err
-	}
-
 	usersOrders := make([]orders.Order, 0)
-	query = "SELECT ord.num, st.ident, COALESCE(op.amount, 0), ord.order_date" +
+	query := "SELECT ord.num, st.ident, COALESCE(op.amount, 0), ord.order_date" +
 		" FROM ygm_order ord" +
 		" INNER JOIN ygm_order_status st ON st.id = ord.status_id" +
 		" LEFT JOIN ygm_balls_operation op ON op.order_id = ord.id" +

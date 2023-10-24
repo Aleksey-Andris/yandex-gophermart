@@ -3,11 +3,9 @@ package controllers
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"net/http"
 
 	"github.com/Aleksey-Andris/yandex-gophermart/internal/authorisations"
-	"github.com/Aleksey-Andris/yandex-gophermart/internal/instruments/db"
 	"github.com/Aleksey-Andris/yandex-gophermart/internal/instruments/logger"
 	"github.com/Aleksey-Andris/yandex-gophermart/internal/withdrawals"
 	"github.com/go-chi/chi"
@@ -44,10 +42,6 @@ func (c *controller) Init() *chi.Mux {
 func (c *controller) getAll(res http.ResponseWriter, req *http.Request) {
 	operations, err := c.usecase.GetAll(req.Context(), authorisations.GetUserID(req.Context()))
 	if err != nil {
-		if errors.Is(err, db.ErrUserNotExist) {
-			res.WriteHeader(http.StatusUnauthorized)
-			return
-		}
 		c.logger.Errorf("Withdrawals: failed to get withdrawals, err value: %s. Session ID: %s", err, c.logger.GetSesionID(req.Context()))
 		res.WriteHeader(http.StatusInternalServerError)
 		return

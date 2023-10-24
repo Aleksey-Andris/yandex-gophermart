@@ -3,14 +3,12 @@ package controllers
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/Aleksey-Andris/yandex-gophermart/internal/authorisations"
 	"github.com/Aleksey-Andris/yandex-gophermart/internal/balances"
-	"github.com/Aleksey-Andris/yandex-gophermart/internal/instruments/db"
 	"github.com/Aleksey-Andris/yandex-gophermart/internal/instruments/logger"
 	"github.com/go-chi/chi"
 )
@@ -49,10 +47,6 @@ func (c *controller) Init() *chi.Mux {
 func (c *controller) get(res http.ResponseWriter, req *http.Request) {
 	balanses, err := c.usecase.Get(req.Context(), authorisations.GetUserID(req.Context()))
 	if err != nil {
-		if errors.Is(err, db.ErrUserNotExist) {
-			res.WriteHeader(http.StatusUnauthorized)
-			return
-		}
 		c.logger.Errorf("Balanses: failed to get orders, err value: %s. Session ID: %s", err, c.logger.GetSesionID(req.Context()))
 		res.WriteHeader(http.StatusInternalServerError)
 		return
@@ -93,10 +87,6 @@ func (c *controller) spend(res http.ResponseWriter, req *http.Request) {
 
 	operation, err := c.usecase.Spend(req.Context(), &request)
 	if err != nil {
-		if errors.Is(err, db.ErrUserNotExist) {
-			res.WriteHeader(http.StatusUnauthorized)
-			return
-		}
 		c.logger.Errorf("Spend: failed to spend balls, err value: %s. Session ID: %s", err, c.logger.GetSesionID(req.Context()))
 		res.WriteHeader(http.StatusInternalServerError)
 		return

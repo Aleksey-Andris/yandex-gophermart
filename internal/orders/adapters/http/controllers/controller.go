@@ -97,10 +97,6 @@ func (c *controller) addOne(res http.ResponseWriter, req *http.Request) {
 func (c *controller) getAll(res http.ResponseWriter, req *http.Request) {
 	orders, err := c.usecase.GetAll(req.Context(), authorisations.GetUserID(req.Context()))
 	if err != nil {
-		if errors.Is(err, db.ErrUserNotExist) {
-			res.WriteHeader(http.StatusUnauthorized)
-			return
-		}
 		c.logger.Errorf("Orders: failed to get orders, err value: %s. Session ID: %s", err, c.logger.GetSesionID(req.Context()))
 		res.WriteHeader(http.StatusInternalServerError)
 		return
