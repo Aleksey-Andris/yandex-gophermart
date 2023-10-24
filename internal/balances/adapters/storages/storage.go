@@ -40,7 +40,7 @@ func (s *storage) Get(ctx context.Context, userID int64) (*balances.Balance, err
 }
 
 func (s *storage) Spend(ctx context.Context, oper *balances.Operation) (*balances.Operation, error) {
-	userId := authorisations.GetUserID(ctx)
+	userID := authorisations.GetUserID(ctx)
 
 	tx, err := s.db.Pool.Begin(ctx)
 	if err != nil {
@@ -51,7 +51,7 @@ func (s *storage) Spend(ctx context.Context, oper *balances.Operation) (*balance
 	var ordID int64
 	query := "INSERT INTO ygm_order (user_id, status_id, num, order_date)" +
 		" VALUES($1, (SELECT s.id FROM ygm_order_status s WHERE s.ident=$2), $3, $4) RETURNING id;"
-	row := tx.QueryRow(ctx, query, userId, "NEW", oper.Ord, time.Now())
+	row := tx.QueryRow(ctx, query, userID, "NEW", oper.Ord, time.Now())
 	err = row.Scan(&ordID)
 	if err != nil {
 		return nil, err
@@ -67,7 +67,7 @@ func (s *storage) Spend(ctx context.Context, oper *balances.Operation) (*balance
 	query = "SELECT COALESCE(SUM(opp.amount), 0) AS current FROM ygm_balls_operation opp" +
 		" LEFT JOIN ygm_order ordp ON ordp.id = opp.order_id" +
 		" WHERE ordp.user_id = $1;"
-	row = tx.QueryRow(ctx, query, userId)
+	row = tx.QueryRow(ctx, query, userID)
 	err = row.Scan(&sum)
 	if err != nil {
 		return nil, err

@@ -25,16 +25,16 @@ func New(logger *logger.Logger, db *db.Postgres) *storage {
 }
 
 func (s *storage) AddOne(ctx context.Context, order *orders.Order) (*orders.Order, error) {
-	var factUserId int64
+	var factUserID int64
 	query := "SELECT user_id FROM ygm_order WHERE num=$1;"
 	row := s.db.Pool.QueryRow(ctx, query, order.Num)
-	err := row.Scan(&factUserId)
+	err := row.Scan(&factUserID)
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
 			return nil, err
 		}
 	} else {
-		if factUserId == order.UserID {
+		if factUserID == order.UserID {
 			return nil, db.ErrRowExist
 		}
 		return nil, db.ErrConflict
