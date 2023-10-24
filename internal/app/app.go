@@ -36,7 +36,7 @@ func Run(cfg *config.Config) {
 	}
 	defer pg.Close()
 
-	mux := initRouter(l, pg)
+	mux := initRouter(l, pg, cfg)
 	httpServer := httpserver.NewAndStart(mux, httpserver.Address(cfg.HTTP.RunAddres))
 
 	interrupt := make(chan os.Signal, 1)
@@ -53,14 +53,14 @@ func Run(cfg *config.Config) {
 	}
 }
 
-func initRouter(l *logger.Logger, pg *db.Postgres) *chi.Mux {
+func initRouter(l *logger.Logger, pg *db.Postgres, cfg *config.Config) *chi.Mux {
 	router := chi.NewRouter()
 	router.Use(compression.Decompress)
 	router.Use(l.WithLogging)
 	router.Use(middleware.Compress(5, "application/json", "text/html"))
 	router.Mount("/", initPing(l, pg))
 	router.Mount("/api/user/", initAuth(l, pg))
-	router.Mount("/api/user/orders", initOrder(l, pg))
+	router.Mount("/api/user/orders", initOrder(l, pg, cfg))
 	router.Mount("/api/user/balance", initBalance(l, pg))
 	router.Mount("/api/user/withdrawals", initWithdrawal(l, pg))
 	return router

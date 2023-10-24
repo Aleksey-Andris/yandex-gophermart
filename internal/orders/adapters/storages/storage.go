@@ -3,6 +3,7 @@ package storages
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/Aleksey-Andris/yandex-gophermart/internal/instruments/db"
 	"github.com/Aleksey-Andris/yandex-gophermart/internal/instruments/logger"
@@ -78,4 +79,71 @@ func (s *storage) GetAll(ctx context.Context, userID int64) ([]orders.Order, err
 		usersOrders = append(usersOrders, order)
 	}
 	return usersOrders, nil
+}
+
+func (s *storage) GetAllUactual(ctx context.Context) ([]orders.Order, error) {
+	usersOrders := make([]orders.Order, 0)
+	query := "SELECT ord.id, ord.num" +
+		" FROM ygm_order ord" +
+		" INNER JOIN ygm_order_status st ON st.id = ord.status_id" +
+		" WHERE  st.ident NOT IN ('INVALID', 'PROCESSED');"
+	rows, err := s.db.Pool.Query(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		order := orders.Order{}
+		if err := rows.Scan(&order.ID, &order.Ord); err != nil {
+			return nil, err
+		}
+		usersOrders = append(usersOrders, order)
+	}
+	return usersOrders, nil
+}
+
+func (s *storage) Update(ctx context.Context, ordrs []orders.Order) error {
+	tx, err := s.db.Pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	queryStat := "UPDATE ygm_order o" +
+		" SET o.status_id = (SELECT s.id FROM ygm_order_status s WHERE s.ident=$1)" +
+		" WHERE o.id = $2;"
+
+	queryDellBalls := "DELETE FROM ygm_balls_operation op" +
+		" WHERE op.order_id = $1 AND op.amount > 0;"
+
+	queryAddBalls := "INSERT INTO ygm_balls_operation op (order_id, amount)" +
+		" VALUES($1, $2);"
+
+	_, err = tx.Prepare(ctx, "stmStat", queryStat)
+	if err != nil {
+		return err
+	}
+	_, err = tx.Prepare(ctx, "stmDellBalls", queryDellBalls)
+	if err != nil {
+		return err
+	}
+	_, err = tx.Prepare(ctx, "stmAddBalls", queryAddBalls)
+	if err != nil {
+		return err
+	}
+
+	for _, o := range ordrs {
+		result := tx.Conn().PgConn().ExecPrepared(ctx, "stmStat", [][]byte{[]byte(o.StatusIdent), []byte(fmt.Sprintf("%d", o.ID))}, nil, nil).Read()
+		if result.Err != nil {
+			return err
+		}
+		result = tx.Conn().PgConn().ExecPrepared(ctx, "stmDellBalls", [][]byte{[]byte(fmt.Sprintf("%d", o.ID))}, nil, nil).Read()
+		if result.Err != nil {
+			return err
+		}
+		result = tx.Conn().PgConn().ExecPrepared(ctx, "stmAddBalls", [][]byte{[]byte(fmt.Sprintf("%d", o.ID)), []byte(fmt.Sprintf("%d", o.Accrual))}, nil, nil).Read()
+		if result.Err != nil {
+			return err
+		}
+	}
+	return tx.Commit(ctx)
 }

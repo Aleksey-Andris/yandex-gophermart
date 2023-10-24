@@ -25,7 +25,7 @@ const (
 )
 
 type Usecase interface {
-	AddOne(ctx context.Context, auth *orders.Order) (*orders.Order, error)
+	AddOne(ctx context.Context, ordrs *orders.Order) (*orders.Order, error)
 	GetAll(ctx context.Context, userID int64) ([]orders.Order, error)
 }
 
