@@ -63,9 +63,10 @@ func (c *controller) addOne(res http.ResponseWriter, req *http.Request) {
 		http.Error(res, "Invalid body", http.StatusBadRequest)
 		return
 	}
-
-	num, err := strconv.ParseInt(string(body), 10, 64)
-	if err != nil || !orders.ValidLoon(int(num)) {
+	
+	num := string(body)
+	numInt, err := strconv.ParseInt(string(body), 10, 64)
+	if err != nil || !orders.ValidLoon(int(numInt)) {
 		c.logger.Errorf("Orders: invalid nums format, err value: %s, num: %s. Session ID: %s", err, string(body), c.logger.GetSesionID(req.Context()))
 		http.Error(res, "Invalid nums format", http.StatusUnprocessableEntity)
 		return

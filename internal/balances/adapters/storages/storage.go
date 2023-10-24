@@ -2,7 +2,6 @@ package storages
 
 import (
 	"context"
-	"strconv"
 	"time"
 
 	"github.com/Aleksey-Andris/yandex-gophermart/internal/authorisations"
@@ -49,14 +48,10 @@ func (s *storage) Spend(ctx context.Context, oper *balances.Operation) (*balance
 	}
 	defer tx.Rollback(ctx)
 
-	ordNum, err := strconv.ParseInt(string(oper.Ord), 10, 64)
-	if err != nil {
-		return nil, err
-	}
 	var ordID int64
 	query := "INSERT INTO ygm_order (user_id, status_id, num, order_date)" +
 		" VALUES($1, (SELECT s.id FROM ygm_order_status s WHERE s.ident=$2), $3, $4) RETURNING id;"
-	row := tx.QueryRow(ctx, query, userId, "NEW", ordNum, time.Now())
+	row := tx.QueryRow(ctx, query, userId, "NEW", oper.Ord, time.Now())
 	err = row.Scan(&ordID)
 	if err != nil {
 		return nil, err

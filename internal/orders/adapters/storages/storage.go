@@ -63,7 +63,7 @@ func (s *storage) GetAll(ctx context.Context, userID int64) ([]orders.Order, err
 	}
 	for rows.Next() {
 		order := orders.Order{}
-		if err := rows.Scan(&order.Number, &order.StatusIdent, &order.Accrual, &order.Date); err != nil {
+		if err := rows.Scan(&order.Num, &order.StatusIdent, &order.Accrual, &order.Date); err != nil {
 			return nil, err
 		}
 		usersOrders = append(usersOrders, order)

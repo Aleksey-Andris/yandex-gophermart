@@ -2,7 +2,6 @@ package clients
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/Aleksey-Andris/yandex-gophermart/internal/instruments/logger"
@@ -20,7 +19,6 @@ type client struct {
 	cl      *resty.Client
 	logger  *logger.Logger
 	usecase Usecase
-	now     chan time.Time
 	stop    chan bool
 }
 
@@ -31,24 +29,17 @@ func New(logger *logger.Logger, address string, cl *resty.Client, usecase Usecas
 		cl:      cl,
 		logger:  logger,
 		usecase: usecase,
-		now:     make(chan time.Time),
 		stop:    make(chan bool),
 	}
-	go c.updOrders(c.stop, c.now)
+	go c.updOrders(c.stop)
 	return c
 }
 
-func (c *client) updOrders(stop <-chan bool, now <-chan time.Time) {
+func (c *client) updOrders(stop <-chan bool) {
 	ticker := time.NewTicker(5 * time.Second)
 	for {
-		select {
-		case <-stop:
-			return
-		case <-now:
-			c.updOrdersNow()
-		case <-ticker.C:
-			c.updOrdersNow()
-		}
+		<-ticker.C
+		c.updOrdersNow()
 	}
 }
 
@@ -61,7 +52,6 @@ func (c *client) updOrdersNow() {
 		return
 	}
 	if len(ordrs) == 0 {
-		c.logger.Info("NO content")
 		return
 	}
 
@@ -70,33 +60,18 @@ func (c *client) updOrdersNow() {
 		_, err := c.cl.R().SetResult(&o).SetPathParams(map[string]string{
 			"ordNum": o.Ord,
 		}).Get(c.address + "/api/orders/{ordNum}")
-
-		c.logger.Info("CONTENT" + o.Ord + fmt.Sprint(o.ID))
-
 		if err != nil {
 			c.logger.Errorf("Orders: failed to call accrulal, err value: %s", err)
 			return
 		}
-
 		ordersUpdated = append(ordersUpdated, o)
 	}
 
 	ctx, gansel = context.WithTimeout(context.Background(), time.Second*30)
 	defer gansel()
 	err = c.usecase.Update(ctx, ordersUpdated)
-	c.logger.Info(ordrs)
-	c.logger.Info(ordersUpdated)
 	if err != nil {
 		c.logger.Errorf("Orders: failed to update orders, err value: %s", err)
 		return
 	}
-}
-
-func (c *client) UpdOrdersNow() {
-	c.now <- time.Now()
-}
-
-func (c *client) Stop() {
-	close(c.now)
-	close(c.stop)
 }

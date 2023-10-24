@@ -71,21 +71,21 @@ func (c *controller) spend(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	var request balances.Operation
-	if err := json.NewDecoder(req.Body).Decode(&request); err != nil {
+	var ord balances.Operation
+	if err := json.NewDecoder(req.Body).Decode(&ord); err != nil {
 		c.logger.Errorf("Spend: failed decoding body, err value: %s. Session ID: %s", err, c.logger.GetSesionID(req.Context()))
 		http.Error(res, "Invalid body", http.StatusBadRequest)
 		return
 	}
 
-	num, err := strconv.ParseInt(string(request.Ord), 10, 64)
-	if err != nil || !balances.ValidLoon(int(num)) {
-		c.logger.Errorf("Spend: invalid nums format, err value: %s, num: %s. Session ID: %s", err, string(request.Ord), c.logger.GetSesionID(req.Context()))
+	numInt, err := strconv.ParseInt(string(ord.Ord), 10, 64)
+	if err != nil || !balances.ValidLoon(int(numInt)) {
+		c.logger.Errorf("Spend: invalid nums format, err value: %s, num: %s. Session ID: %s", err, ord.Ord, c.logger.GetSesionID(req.Context()))
 		http.Error(res, "Invalid nums format", http.StatusUnprocessableEntity)
 		return
 	}
 
-	operation, err := c.usecase.Spend(req.Context(), &request)
+	operation, err := c.usecase.Spend(req.Context(), &ord)
 	if err != nil {
 		c.logger.Errorf("Spend: failed to spend balls, err value: %s. Session ID: %s", err, c.logger.GetSesionID(req.Context()))
 		res.WriteHeader(http.StatusInternalServerError)

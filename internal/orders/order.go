@@ -11,12 +11,11 @@ const (
 
 type Order struct {
 	ID          int64     `json:"-"`
-	Num         int64     `json:"-"`
-	Ord         string    `json:"order"`
-	Number      string    `json:"number,omitempty"`
-	StatusIdent string    `json:"status"`
+	Ord         string    `json:"order,omitempty"`
+	Num         string    `json:"number,omitempty"`
+	StatusIdent string    `json:"status,omitempty"`
 	UserID      int64     `json:"-"`
-	Date        time.Time `json:"uploaded_at"`
+	Date        time.Time `json:"uploaded_at,omitempty"`
 	Accrual     float64   `json:"accrual,omitempty"`
 }
 
