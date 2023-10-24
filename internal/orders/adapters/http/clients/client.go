@@ -2,6 +2,7 @@ package clients
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/Aleksey-Andris/yandex-gophermart/internal/instruments/logger"
@@ -54,28 +55,37 @@ func (c *client) updOrders(stop <-chan bool, now <-chan time.Time) {
 func (c *client) updOrdersNow() {
 	ctx, gansel := context.WithTimeout(context.Background(), time.Second*30)
 	defer gansel()
-	orders, err := c.usecase.GetAllUactual(ctx)
+	ordrs, err := c.usecase.GetAllUactual(ctx)
 	if err != nil {
 		c.logger.Errorf("Orders: failed to get actual orders from db, err value: %s", err)
 		return
 	}
-	if len(orders) == 0 {
+	if len(ordrs) == 0 {
+		c.logger.Info("NO content")
 		return
 	}
 
-	for i, o := range orders {
-		_, err := c.cl.R().SetResult(&orders[i]).SetPathParams(map[string]string{
+	ordersUpdated := make([]orders.Order, 0)
+	for _, o := range ordrs {
+		_, err := c.cl.R().SetResult(&o).SetPathParams(map[string]string{
 			"ordNum": o.Ord,
 		}).Get(c.address + "/api/orders/{ordNum}")
+
+		c.logger.Info("CONTENT" + o.Ord + fmt.Sprint(o.ID))
+
 		if err != nil {
 			c.logger.Errorf("Orders: failed to call accrulal, err value: %s", err)
 			return
 		}
+
+		ordersUpdated = append(ordersUpdated, o)
 	}
 
 	ctx, gansel = context.WithTimeout(context.Background(), time.Second*30)
 	defer gansel()
-	err = c.usecase.Update(ctx, orders)
+	err = c.usecase.Update(ctx, ordersUpdated)
+	c.logger.Info(ordrs)
+	c.logger.Info(ordersUpdated)
 	if err != nil {
 		c.logger.Errorf("Orders: failed to update orders, err value: %s", err)
 		return

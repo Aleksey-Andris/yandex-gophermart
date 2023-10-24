@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/Aleksey-Andris/yandex-gophermart/internal/instruments/db"
 	"github.com/Aleksey-Andris/yandex-gophermart/internal/instruments/logger"
@@ -62,7 +63,7 @@ func (s *storage) GetAll(ctx context.Context, userID int64) ([]orders.Order, err
 	}
 
 	usersOrders := make([]orders.Order, 0)
-	query = "SELECT ord.num, st.ident, op.amount, ord.order_date" +
+	query = "SELECT ord.num, st.ident, COALESCE(op.amount, 0), ord.order_date" +
 		" FROM ygm_order ord" +
 		" INNER JOIN ygm_order_status st ON st.id = ord.status_id" +
 		" LEFT JOIN ygm_balls_operation op ON op.order_id = ord.id" +
@@ -73,7 +74,7 @@ func (s *storage) GetAll(ctx context.Context, userID int64) ([]orders.Order, err
 	}
 	for rows.Next() {
 		order := orders.Order{}
-		if err := rows.Scan(&order.Ord, &order.StatusIdent, &order.Accrual, &order.Date); err != nil {
+		if err := rows.Scan(&order.Number, &order.StatusIdent, &order.Accrual, &order.Date); err != nil {
 			return nil, err
 		}
 		usersOrders = append(usersOrders, order)
@@ -108,14 +109,14 @@ func (s *storage) Update(ctx context.Context, ordrs []orders.Order) error {
 	}
 	defer tx.Rollback(ctx)
 
-	queryStat := "UPDATE ygm_order o" +
-		" SET o.status_id = (SELECT s.id FROM ygm_order_status s WHERE s.ident=$1)" +
-		" WHERE o.id = $2;"
+	queryStat := "UPDATE ygm_order" +
+		" SET status_id = (SELECT s.id FROM ygm_order_status s WHERE s.ident=$1)" +
+		" WHERE id = $2;"
 
-	queryDellBalls := "DELETE FROM ygm_balls_operation op" +
-		" WHERE op.order_id = $1 AND op.amount > 0;"
+	queryDellBalls := "DELETE FROM ygm_balls_operation" +
+		" WHERE order_id = $1 AND amount > 0;"
 
-	queryAddBalls := "INSERT INTO ygm_balls_operation op (order_id, amount)" +
+	queryAddBalls := "INSERT INTO ygm_balls_operation (order_id, amount)" +
 		" VALUES($1, $2);"
 
 	_, err = tx.Prepare(ctx, "stmStat", queryStat)
@@ -132,15 +133,15 @@ func (s *storage) Update(ctx context.Context, ordrs []orders.Order) error {
 	}
 
 	for _, o := range ordrs {
-		result := tx.Conn().PgConn().ExecPrepared(ctx, "stmStat", [][]byte{[]byte(o.StatusIdent), []byte(fmt.Sprintf("%d", o.ID))}, nil, nil).Read()
+		result := tx.Conn().PgConn().ExecPrepared(ctx, "stmStat", [][]byte{[]byte(o.StatusIdent), []byte(strconv.FormatInt(o.ID, 10))}, nil, nil).Read()
 		if result.Err != nil {
 			return err
 		}
-		result = tx.Conn().PgConn().ExecPrepared(ctx, "stmDellBalls", [][]byte{[]byte(fmt.Sprintf("%d", o.ID))}, nil, nil).Read()
+		result = tx.Conn().PgConn().ExecPrepared(ctx, "stmDellBalls", [][]byte{[]byte(strconv.FormatInt(o.ID, 10))}, nil, nil).Read()
 		if result.Err != nil {
 			return err
 		}
-		result = tx.Conn().PgConn().ExecPrepared(ctx, "stmAddBalls", [][]byte{[]byte(fmt.Sprintf("%d", o.ID)), []byte(fmt.Sprintf("%d", o.Accrual))}, nil, nil).Read()
+		result = tx.Conn().PgConn().ExecPrepared(ctx, "stmAddBalls", [][]byte{[]byte(strconv.FormatInt(o.ID, 10)), []byte(fmt.Sprintf("%f", o.Accrual))}, nil, nil).Read()
 		if result.Err != nil {
 			return err
 		}

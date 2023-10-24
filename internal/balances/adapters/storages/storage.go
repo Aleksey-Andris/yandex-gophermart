@@ -54,7 +54,7 @@ func (s *storage) Get(ctx context.Context, userID int64) (*balances.Balance, err
 }
 
 func (s *storage) Spend(ctx context.Context, oper *balances.Operation) (*balances.Operation, error) {
-	var factUserId int64
+	factUserId := authorisations.GetUserID(ctx)
 	query := "SELECT id FROM ygm_user WHERE id = $1;"
 	row := s.db.Pool.QueryRow(ctx, query, authorisations.GetUserID(ctx))
 	err := row.Scan(&factUserId)

@@ -98,7 +98,7 @@ func (c *controller) register(res http.ResponseWriter, req *http.Request) {
 		HttpOnly: true,
 	})
 
-	res.WriteHeader(http.StatusCreated)
+	res.WriteHeader(http.StatusOK)
 }
 
 func (c *controller) login(res http.ResponseWriter, req *http.Request) {
