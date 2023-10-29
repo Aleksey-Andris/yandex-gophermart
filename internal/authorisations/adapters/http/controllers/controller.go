@@ -86,7 +86,7 @@ func (c *controller) register(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	tokenVal, err := buildJWTString(auth)
+	tokenVal, err := BuildJWTString(auth)
 	if err != nil {
 		c.logger.Errorf("Register: failed to build token after registration, err value: %s. Session ID: %s", err, c.logger.GetSesionID(req.Context()))
 		http.Error(res, "Failed to build tiken after registration", http.StatusInternalServerError)
@@ -133,7 +133,7 @@ func (c *controller) login(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	tokenVal, err := buildJWTString(auth)
+	tokenVal, err := BuildJWTString(auth)
 	if err != nil {
 		c.logger.Errorf("Login: failed to build token after login, err value: %s. Session ID: %s", err, c.logger.GetSesionID(req.Context()))
 		http.Error(res, "Failed to build tiken after login", http.StatusInternalServerError)
@@ -156,7 +156,7 @@ func generatePasswordHash(password string) string {
 	return hashString
 }
 
-func buildJWTString(auth *authorisations.Auth) (string, error) {
+func BuildJWTString(auth *authorisations.Auth) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, authorisations.TokenClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(authorisations.TokenExp)),
