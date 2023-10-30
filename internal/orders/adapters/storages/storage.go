@@ -94,7 +94,7 @@ func (s *storage) GetAllUactual(ctx context.Context) ([]orders.Order, error) {
 func (s *storage) Update(ctx context.Context, ordrs []orders.Order) error {
 	tx, err := s.db.Pool.Begin(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to start transaction: %w", err)
 	}
 	defer tx.Rollback(ctx)
 
