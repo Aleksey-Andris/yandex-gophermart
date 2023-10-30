@@ -13,10 +13,10 @@ import (
 const (
 	SigningKey = "ushjdhui38487"
 	TokenExp   = time.Hour * 3
-	userCTX YGMAuthContext = "YGMUserID"
+	userCTX ygmAuthContext = "YGMUserID"
 )
 
-type YGMAuthContext string
+type ygmAuthContext string
 
 type TokenClaims struct {
 	jwt.RegisteredClaims

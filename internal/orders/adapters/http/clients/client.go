@@ -23,7 +23,7 @@ type client struct {
 }
 
 func New(logger *logger.Logger, address string, cl *resty.Client, usecase Usecase) *client {
-	cl.SetRetryCount(3).SetRetryWaitTime(30 * time.Second).SetRetryMaxWaitTime(90 * time.Second)
+	cl.SetRetryCount(3).SetRetryWaitTime(30 * time.Second).SetRetryMaxWaitTime(90 * time.Second).SetTimeout(time.Second*5)
 	c := &client{
 		address: address,
 		cl:      cl,

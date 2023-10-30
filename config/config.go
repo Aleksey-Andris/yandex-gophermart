@@ -14,23 +14,11 @@ var (
 )
 
 type Config struct {
-	HTTP
-	Log
-	PG
-}
-
-type HTTP struct {
 	RunAddres      string `env:"RUN_ADDRESS"`
 	AccrualAddress string `env:"ACCRUAL_SYSTEM_ADDRESS"`
-}
-
-type Log struct {
-	Environment string `env:"LOG_ENVEROMENT" envDefault:"develop"`
-}
-
-type PG struct {
-	PoolMax int    `env:"POOL_MAX" envDefault:"1"`
-	URI     string `env:"DATABASE_URI"`
+	LogEnvironment string `env:"LOG_ENVEROMENT" envDefault:"develop"`
+	DBPoolMax      int    `env:"POOL_MAX" envDefault:"1"`
+	DBURI          string `env:"DATABASE_URI"`
 }
 
 func New() (*Config, error) {
@@ -44,14 +32,14 @@ func New() (*Config, error) {
 	flag.StringVar(&flagDataBaseURI, "d", "", "database uri")
 	flag.Parse()
 
-	if flagRunAddress != "" && cfg.HTTP.RunAddres == "" {
-		cfg.HTTP.RunAddres = flagRunAddress
+	if flagRunAddress != "" && cfg.RunAddres == "" {
+		cfg.RunAddres = flagRunAddress
 	}
-	if flagAccruralSystemAddresss != "" && cfg.HTTP.AccrualAddress == "" {
-		cfg.HTTP.AccrualAddress = flagAccruralSystemAddresss
+	if flagAccruralSystemAddresss != "" && cfg.AccrualAddress == "" {
+		cfg.AccrualAddress = flagAccruralSystemAddresss
 	}
-	if flagDataBaseURI != "" && cfg.PG.URI == "" {
-		cfg.PG.URI = flagDataBaseURI
+	if flagDataBaseURI != "" && cfg.DBURI == "" {
+		cfg.DBURI = flagDataBaseURI
 	}
 
 	return cfg, nil

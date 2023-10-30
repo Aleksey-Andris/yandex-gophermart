@@ -16,6 +16,6 @@ func initOrder(l *logger.Logger, db *db.Postgres, cfg *config.Config) *chi.Mux {
 	storage := storages.New(l, db)
 	usecase := orders.New(l, storage)
 	controller := controllers.New(l, usecase)
-	clients.New(l, cfg.HTTP.AccrualAddress,  resty.New(), usecase)
+	clients.New(l, cfg.AccrualAddress,  resty.New(), usecase)
 	return controller.Init()
 }

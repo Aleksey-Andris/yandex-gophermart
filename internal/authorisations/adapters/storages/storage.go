@@ -3,6 +3,7 @@ package storages
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/Aleksey-Andris/yandex-gophermart/internal/authorisations"
 	"github.com/Aleksey-Andris/yandex-gophermart/internal/instruments/db"
@@ -32,6 +33,8 @@ func (s *storage) Register(ctx context.Context, auth *authorisations.Auth) (*aut
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgerrcode.IsIntegrityConstraintViolation(pgErr.Code) {
 			err = db.ErrConflict
+		} else {
+			err = fmt.Errorf("failed to insert user in DB: %w", err)
 		}
 	}
 	return auth, err
@@ -44,6 +47,8 @@ func (s *storage) Login(ctx context.Context, auth *authorisations.Auth) (*author
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			err = db.ErrNoRows
+		} else {
+			err = fmt.Errorf("failed to get user from DB: %w", err)
 		}
 	}
 	return auth, err

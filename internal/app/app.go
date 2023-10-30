@@ -16,28 +16,28 @@ import (
 )
 
 func Run(cfg *config.Config) {
-	l, err := logger.New(cfg.Log.Environment)
+	l, err := logger.New(cfg.LogEnvironment)
 	if err != nil {
 		log.Fatalf("Logger: failed creating: %s", err)
 	}
 	defer l.Sync()
 	l.Infow("Config application:",
-		"Run_Addres", cfg.HTTP.RunAddres,
-		"Accrual_Address", cfg.HTTP.AccrualAddress,
-		"Environment", cfg.Log.Environment,
-		"DB_PoolMax", cfg.PG.PoolMax,
-		"DB_URI", cfg.PG.URI,
+		"Run_Addres", cfg.RunAddres,
+		"Accrual_Address", cfg.AccrualAddress,
+		"Environment", cfg.LogEnvironment,
+		"DB_PoolMax", cfg.DBPoolMax,
+		"DB_URI", cfg.DBURI,
 	)
 	startMigrations(l, cfg)
 
-	pg, err := db.NewPostgres(cfg.PG.URI, db.MaxPoolSize(cfg.PG.PoolMax))
+	pg, err := db.NewPostgres(cfg.DBURI, db.MaxPoolSize(cfg.DBPoolMax))
 	if err != nil {
 		l.Fatalf("Storage: creating error: %s", err)
 	}
 	defer pg.Close()
 
 	mux := initRouter(l, pg, cfg)
-	httpServer := httpserver.NewAndStart(mux, httpserver.Address(cfg.HTTP.RunAddres))
+	httpServer := httpserver.NewAndStart(mux, httpserver.Address(cfg.RunAddres))
 
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt, syscall.SIGTERM)

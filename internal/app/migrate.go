@@ -14,7 +14,7 @@ import (
 )
 
 func startMigrations(l *logger.Logger, cfg *config.Config) {
-	db, err := sql.Open("pgx", cfg.PG.URI)
+	db, err := sql.Open("pgx", cfg.DBURI)
 	if err != nil {
 		l.Fatalf("Migrate: failed opening db: %s", err)
 	}

@@ -2,6 +2,7 @@ package storages
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/Aleksey-Andris/yandex-gophermart/internal/authorisations"
@@ -36,6 +37,9 @@ func (s *storage) Get(ctx context.Context, userID int64) (*balances.Balance, err
 	var balanse balances.Balance
 	row := s.db.Pool.QueryRow(ctx, query, userID, userID)
 	err := row.Scan(&balanse.Current, &balanse.Withdrawn)
+	if err != nil {
+		err = fmt.Errorf("failed to get balanse from DB: %w", err)
+	}
 	return &balanse, err
 }
 
@@ -44,23 +48,30 @@ func (s *storage) Spend(ctx context.Context, oper *balances.Operation) (*balance
 
 	tx, err := s.db.Pool.Begin(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to start transaction: %w", err)
 	}
 	defer tx.Rollback(ctx)
 
+	query := "SELECT id FROM ygm_user WHERE id=$1 FOR UPDATE;"
+	row := tx.QueryRow(ctx, query, userID)
+	err = row.Scan(&userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user from DB: %w", err)
+	}
+
 	var ordID int64
-	query := "INSERT INTO ygm_order (user_id, status_id, num, order_date)" +
+	query = "INSERT INTO ygm_order (user_id, status_id, num, order_date)" +
 		" VALUES($1, (SELECT s.id FROM ygm_order_status s WHERE s.ident=$2), $3, $4) RETURNING id;"
-	row := tx.QueryRow(ctx, query, userID, "NEW", oper.Ord, time.Now())
+	row = tx.QueryRow(ctx, query, userID, "NEW", oper.Ord, time.Now())
 	err = row.Scan(&ordID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to insert order in DB: %w", err)
 	}
 
 	query = "INSERT INTO ygm_balls_operation (order_id, amount) VALUES($1, $2);"
 	_, err = tx.Exec(ctx, query, ordID, -oper.Amount)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to insert operetion in DB: %w", err)
 	}
 
 	var sum float64
@@ -70,7 +81,7 @@ func (s *storage) Spend(ctx context.Context, oper *balances.Operation) (*balance
 	row = tx.QueryRow(ctx, query, userID)
 	err = row.Scan(&sum)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to check balls sum: %w", err)
 	}
 	if sum < 0 {
 		oper.Result = balances.ResultNotEnough

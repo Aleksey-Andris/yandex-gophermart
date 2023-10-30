@@ -2,6 +2,7 @@ package storages
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Aleksey-Andris/yandex-gophermart/internal/instruments/db"
 	"github.com/Aleksey-Andris/yandex-gophermart/internal/instruments/logger"
@@ -28,12 +29,12 @@ func (s *storage) GetAll(ctx context.Context, userID int64) ([]withdrawals.Withd
 		" WHERE  ord.user_id = $1 AND op.amount < 0 ORDER BY ord.order_date;"
 	rows, err := s.db.Pool.Query(ctx, query, userID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get withdrawals from DB: %w", err)
 	}
 	for rows.Next() {
 		oper := withdrawals.Withdrowal{}
 		if err := rows.Scan(&oper.Ord, &oper.Amount, &oper.Data); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to scan withdrawals from rows: %w", err)
 		}
 		operations = append(operations, oper)
 	}
