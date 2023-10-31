@@ -56,6 +56,7 @@ func Run(cfg *config.Config) {
 func initRouter(l *logger.Logger, pg *db.Postgres, cfg *config.Config) *chi.Mux {
 	router := chi.NewRouter()
 	router.Use(compression.Decompress)
+	router.Use(middleware.Recoverer)
 	router.Use(l.WithLogging)
 	router.Use(middleware.Compress(5, "application/json", "text/html"))
 	router.Mount("/", initPing(l, pg))
